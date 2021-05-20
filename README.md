@@ -144,7 +144,7 @@ Pode-se utilizar o Apache Sqoop para fazer a carga dos dados do banco de dados r
 sqoop import-all-tables --connect jdbc:mysql://localhost:3306/adventureworks?serverTimezone=UTC --username root --password Dsahadoop@1 --m 1
 
 ```
-O comando acima executado importa para o HDFS todas as 70 tabelas do banco de dados *adventureworks* rodando na máquina local, acessado pela porta 3306 (padrão do MySQL), através do driver JDBC. A saída do terminal pode ser observada no arquivo sqoop import-all-tables --c.log. Abaixo pode-se verificar que os dados foram transferidos para a estrutura /user/hadoop/ em formato texto, em um diretório para cada uma das tabelas do banco de dados.
+O comando acima executado importa para o HDFS todas as 70 tabelas do banco de dados *adventureworks* rodando na máquina local, acessado pela porta 3306 (padrão do MySQL), através do driver JDBC. A saída do terminal pode ser observada no arquivo sqoop_to_hdfs.log. Abaixo pode-se verificar que os dados foram transferidos para a estrutura /user/hadoop/ em formato texto, em um diretório para cada uma das tabelas do banco de dados.
 
 ```
 [hadoop@dataserver ~]$ hdfs dfs -ls /user/hadoop
@@ -230,50 +230,107 @@ Found 2 items
 
 Contudo, utilizar o Apache Hive rodando sobre o HDFS permite uma maior facilidade na manipulação dos dados no cluster, pois pode-se utilizar a linguagem HQL, bastante similar ao já bem conhecido SQL padrão.
 
-Antes de tudo, deve-se certificar que existe uma estrutura de diretórios no HDFS tal como:
+Antes de tudo, deve-se certificar que existe uma estrutura de diretórios no HDFS com permissão para escrita do usuário proprietário do banco de dados, para onde os arquivos serão direcionados, tal como:
 
 ```
 [hadoop@dataserver ~]$ hdfs dfs -ls /user/hive
 Found 1 items
-drwxr-xr-x   - hadoop supergroup          0 2021-05-18 12:04 /user/hive/warehouse
+drwxrwxrwx   - hadoop supergroup          0 2021-05-18 12:04 /user/hive/warehouse
 
 ```
-Esta estrutura de diretórios é onde o Hive cria o *warehouse* no HDFS.
+Esta estrutura de diretórios é onde o Hive cria o *warehouse* no HDFS e armazena os dados. Assumindo que este projeto tens fins didáticos, sendo executado em um ambiente de teste apenas para demonstração do processo de carga de dados, as questões de segurança de dados serão relevadas.
 
-Com o Hive devidamente configurado e o banco de dados *adventureworks* carregado no MySQL, utiliza-se o Sqoop para carga dos dados no Apache Hive. Bastando para isto digitar o comando no terminal:
-
-```
-sqoop import-all-tables --connect jdbc:mysql://localhost:3306/adventureworks?serverTimezone=UTC --username root --password Dsahadoop@1 --hive-import
-```
+Com o Hive devidamente configurado e o banco de dados *adventureworks* carregado no MySQL, utiliza-se o Sqoop para carga dos dados no Apache Hive. Bastando para isto digitar o comando no terminal com a sintaxe mostrada abaixo:
 
 ```
-[hadoop@dataserver bin]$ schematool -dbType derby -initSchema
-SLF4J: Class path contains multiple SLF4J bindings.
-SLF4J: Found binding in [jar:file:/opt/hive/lib/log4j-slf4j-impl-2.10.0.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-SLF4J: Found binding in [jar:file:/opt/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
-SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
-Metastore connection URL:	 jdbc:derby:;databaseName=metastore_db;create=true
-Metastore Connection Driver :	 org.apache.derby.jdbc.EmbeddedDriver
-Metastore connection User:	 APP
-Starting metastore schema initialization to 3.1.0
-Initialization script hive-schema-3.1.0.derby.sql
+sqoop import --connect jdbc:mysql://localhost:3306/adventureworks?serverTimezone=UTC --username root --password Dsahadoop@1 --table customer --hive-import --map-column-hive rowguid=string --target-dir /user/hive/warehouse/adventureworks
+```
+Na prática, em relação à simples importação anterior para o HDFS, acrescenta-se as opções --table customer, para especificar qual tabela do banco de dados será importada, --hive-import, para especificar ao sqoop que a importação será feita para o Hive, --map-column-hive rowguid=string, acrescentada para contornar erros de tipos de dados não suportados pelo Hive e --target-dir /user/hive/warehouse/adventureworks para indicar qual o diretório onde o sqoop guardará os dados (caso não seja indicado, os dados serão gravados no diretório /user/hadoop, a menos que os arquivos de configuração indiquem outro diretório padrão).
 
-
-Initialization script completed
-schemaTool completed
+O Sqoop gera um job mapreduce para realizar esta carga de dados para o Hive sobre o HDFS. Abaixo é mostrado o resumo deste job de carga da tabela customer:
 
 ```
+2021-05-20 10:30:17,057 INFO mapreduce.Job: The url to track the job: http://localhost:8088/proxy/application_1621531182691_0002/
+2021-05-20 10:30:17,057 INFO mapreduce.Job: Running job: job_1621531182691_0002
+2021-05-20 10:30:26,354 INFO mapreduce.Job: Job job_1621531182691_0002 running in uber mode : false
+2021-05-20 10:30:26,356 INFO mapreduce.Job:  map 0% reduce 0%
+2021-05-20 10:30:40,678 INFO mapreduce.Job:  map 25% reduce 0%
+2021-05-20 10:30:45,823 INFO mapreduce.Job:  map 50% reduce 0%
+2021-05-20 10:30:46,835 INFO mapreduce.Job:  map 75% reduce 0%
+2021-05-20 10:30:47,844 INFO mapreduce.Job:  map 100% reduce 0%
+2021-05-20 10:30:47,862 INFO mapreduce.Job: Job job_1621531182691_0002 completed successfully
+2021-05-20 10:30:47,970 INFO mapreduce.Job: Counters: 34
+	File System Counters
+		FILE: Number of bytes read=0
+		FILE: Number of bytes written=919832
+		FILE: Number of read operations=0
+		FILE: Number of large read operations=0
+		FILE: Number of write operations=0
+		HDFS: Number of bytes read=483
+		HDFS: Number of bytes written=1746278
+		HDFS: Number of read operations=24
+		HDFS: Number of large read operations=0
+		HDFS: Number of write operations=8
+		HDFS: Number of bytes read erasure-coded=0
+	Job Counters 
+		Killed map tasks=1
+		Launched map tasks=4
+		Other local map tasks=4
+		Total time spent by all maps in occupied slots (ms)=62710
+		Total time spent by all reduces in occupied slots (ms)=0
+		Total time spent by all map tasks (ms)=62710
+		Total vcore-milliseconds taken by all map tasks=62710
+		Total megabyte-milliseconds taken by all map tasks=64215040
+	Map-Reduce Framework
+		Map input records=19185
+		Map output records=19185
+		Input split bytes=483
+		Spilled Records=0
+		Failed Shuffles=0
+		Merged Map outputs=0
+		GC time elapsed (ms)=412
+		CPU time spent (ms)=6380
+		Physical memory (bytes) snapshot=536674304
+		Virtual memory (bytes) snapshot=10117267456
+		Total committed heap usage (bytes)=243531776
+		Peak Map Physical memory (bytes)=138088448
+		Peak Map Virtual memory (bytes)=2529583104
+	File Input Format Counters 
+		Bytes Read=0
+	File Output Format Counters 
+		Bytes Written=1746278
+2021-05-20 10:30:47,987 INFO mapreduce.ImportJobBase: Transferred 1.6654 MB in 34.5846 seconds (49.3096 KB/sec)
+2021-05-20 10:30:47,990 INFO mapreduce.ImportJobBase: Retrieved 19185 records.
 
-Último teste:
-[hadoop@dataserver ~]$ sqoop import --connect jdbc:mysql://localhost:3306/adventureworks?serverTimezone=UTC --username root --password Dsahadoop@1 --table customer --hive-import --hive-database adventureworks --hive-table customer ----map-column-hive rowguid=binary --target-dir /user/hive/warehouse/adventureworks --m 1
-Error: Could not find or load main class org.apache.hadoop.hbase.util.GetJavaProperty
-2021-05-19 14:04:15,702 INFO sqoop.Sqoop: Running Sqoop version: 1.4.7
-2021-05-19 14:04:15,904 WARN tool.BaseSqoopTool: Setting your password on the command-line is insecure. Consider using -P instead.
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Error parsing arguments for import:
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: ----map-column-hive
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: rowguid=binary
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: --target-dir
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: /user/hive/warehouse/adventureworks
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: --m
-2021-05-19 14:04:15,905 ERROR tool.BaseSqoopTool: Unrecognized argument: 1
+```
+Com a carga de dados finalizada com sucesso, pode-se verificar no ambiente do Hive se os dados foram importados e estão acessíveis.
+
+```
+Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+Hive Session ID = 18acfa27-1452-47d2-82d2-8e0ddc209377
+hive> show databases;
+OK
+default
+Time taken: 0.79 seconds, Fetched: 1 row(s)
+hive> use default;
+OK
+Time taken: 0.036 seconds
+hive> show tables;
+OK
+customer
+Time taken: 0.151 seconds, Fetched: 1 row(s)
+hive> describe customer;
+OK
+customerid          	int                 	                    
+territoryid         	int                 	                    
+accountnumber       	string              	                    
+customertype        	string              	                    
+rowguid             	string              	                    
+modifieddate        	string              	                    
+Time taken: 0.46 seconds, Fetched: 6 row(s)
+
+```
+Verifica-se então que a tabela customer do banco de dados adventureworks foi importada com sucesso e pode ser acessada diretamente no cluster Hadoop através do Hive, podendo ser processada com linguagem HQL, ou ainda através pelo módulo SQL do Apache Spark.
+
+## Conclusões
+Conclui-se o presente trabalho fazendo-se as constatações que o framework Apache Hadoop oferece uma ampla gama de soluções open source de desenvolvimento de aplicações de *big data* em ambiente distribuído, com diversas possibilidades de integrações com as ferramentas do seu ecossistema. Neste trabalho, foram utilizados o Apache Sqoop como ferramenta de ETL para carga de dados de um banco de dados MySQL para um *datalake* HDFS e um *data warehouse* no Apache Hive. Com os dados disponíveis no HDFS ou no Hive, pode-se utilizar as vantagens computacionais de um cluster de computadores para processamento distribuído dos dados, criando diretamente jobs mapreduce, ou utilizando o próprio Apache Hive com sua linguagem HQL, ou até mesmo outras soluções do ecossistema Hadoop, como o Apache Mahout, Apache Pig e o Apache Spark. Como registro de aprendizado, ressalta-se que, apesar de a tarefa desenvolvida no presente trabalho ser bastante simples, foram enfrentados diversos erros no caminho, que exigiram um considerável tempo de pesquisa na documentação do Apache Hive e Apache Sqoop para que a carga de dados do banco de dados local pudesse ser carregada em um ambiente distribuído.
