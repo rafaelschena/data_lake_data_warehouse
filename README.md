@@ -5,10 +5,9 @@
 
 O objetivo deste projeto é implementar um *data warehouse* rodando sobre um *data lake* com Apache Hadoop, transferindo os dados de um banco de dados MySQL para o Apache Hive rodando sobre o sistema de arquivos HDFS de um cluster Hadoop, permitindo manipulações com o Apache Spark.
 
-O projeto será executado em três passos:
+O projeto será executado dois passos:
 - Passo 1 - carregar o banco de dados no MySQL;
-- Passo 2 - transferir o banco de dados do MySQL para o Hive;
-- Passo 3 - processar os dados no Hive com o Spark;
+- Passo 2 - transferir o banco de dados do MySQL para o HDFS e para o Hive;
 
 Requisitos para execução do projeto como descrito neste documento:
 - Sistema operacional Linux;
@@ -333,4 +332,4 @@ Time taken: 0.46 seconds, Fetched: 6 row(s)
 Verifica-se então que a tabela customer do banco de dados adventureworks foi importada com sucesso e pode ser acessada diretamente no cluster Hadoop através do Hive, podendo ser processada com linguagem HQL, ou ainda através pelo módulo SQL do Apache Spark.
 
 ## Conclusões
-Conclui-se o presente trabalho fazendo-se as constatações que o framework Apache Hadoop oferece uma ampla gama de soluções open source de desenvolvimento de aplicações de *big data* em ambiente distribuído, com diversas possibilidades de integrações com as ferramentas do seu ecossistema. Neste trabalho, foram utilizados o Apache Sqoop como ferramenta de ETL para carga de dados de um banco de dados MySQL para um *datalake* HDFS e um *data warehouse* no Apache Hive. Com os dados disponíveis no HDFS ou no Hive, pode-se utilizar as vantagens computacionais de um cluster de computadores para processamento distribuído dos dados, criando diretamente jobs mapreduce, ou utilizando o próprio Apache Hive com sua linguagem HQL, ou até mesmo outras soluções do ecossistema Hadoop, como o Apache Mahout, Apache Pig e o Apache Spark. Como registro de aprendizado, ressalta-se que, apesar de a tarefa desenvolvida no presente trabalho ser bastante simples, foram enfrentados diversos erros no caminho, que exigiram um considerável tempo de pesquisa na documentação do Apache Hive e Apache Sqoop para que a carga de dados do banco de dados local pudesse ser carregada em um ambiente distribuído.
+Conclui-se o presente trabalho fazendo-se as constatações que o framework Apache Hadoop oferece uma ampla gama de soluções open source para desenvolvimento de aplicações de *big data* em ambiente distribuído, com diversas possibilidades de integrações com as ferramentas do seu ecossistema. Neste trabalho, foram utilizados o Apache Sqoop como ferramenta de ETL para carga de dados de um banco de dados MySQL para um *datalake* HDFS e um *data warehouse* no Apache Hive. Com os dados disponíveis no HDFS ou no Hive, pode-se utilizar as vantagens computacionais de um cluster de computadores para processamento distribuído dos dados, criando diretamente jobs mapreduce, ou utilizando o próprio Apache Hive com sua linguagem HQL, ou até mesmo outras soluções do ecossistema Hadoop, como o Apache Mahout, Apache Pig e o Apache Spark. Como registro de aprendizado, ressalta-se que, apesar de a tarefa desenvolvida no presente trabalho ser bastante simples, foram enfrentados diversos erros no caminho, que exigiram um considerável tempo de pesquisa na documentação do Apache Hive e Apache Sqoop para que a carga de dados do banco de dados local pudesse ser carregada em um ambiente distribuído. Como possível extensão deste trabalho, pode ser acrescentada uma etapa de processamento dos dados armazenados no *cluster* Hadoop com o Apache Spark, tanto importando os dados diretamente do HDFS ou então importando as tabelas do Hive.
